@@ -1,0 +1,28 @@
+Given a set of strings
+(1) determine if there are any duplicates
+(2) if there are duplicates, return the set of unique strings
+
+
+Techniques
+1) Hash table
+  Lua
+  C (use RSHMAP)
+  Python
+  Java
+2) convert each string to 64 bit hash, sort and sequential scan for unique
+
+Let p = P[all strings unique]
+Let c1 be cost of determining unique
+Let c2 be cost of de-dupe
+How high should p be so that it is worth checking for unique before dedupe?
+
+Study what happens when variance of p increases
+
+
+Study which technique works best as data size varies
+
+Create program to generate strings given (m, n, k)
+
+where k = length of string (assume all the same size)
+m = number of unique strings (m <= n)
+n = total number of strings

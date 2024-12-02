@@ -1,0 +1,6 @@
+https://www.geeksforgeeks.org/kmp-algorithm-for-pattern-searching/
+
+Implement KMP algorithm?
+
+
+What if we could guess start of string? How could we do better?
