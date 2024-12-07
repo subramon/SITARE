@@ -26,3 +26,6 @@ Create program to generate strings given (m, n, k)
 where k = length of string (assume all the same size)
 m = number of unique strings (m <= n)
 n = total number of strings
+
+
+Use Bloom filter
