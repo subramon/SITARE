@@ -1,0 +1,52 @@
+Python->C
+/Start?NumUsers=4
+
+C->Python
+{ "User": 1, "Pool" : [ "P", "O", "L" ],
+"Words" : [ [], [], [], [] ]}
+-- The pool will always have a minimum of 3 letters 
+-- C thinks it is user 1's turn 
+
+Python->C
+/Make?User=1&Word=OLP&Pool=POL
+-- this means that user 1 is trying to make word OLP using letters P, O, L from Pool
+
+C->Python
+{ "User": 2, "Pool" : [ "P", "O", "L" ], 
+"Words" : [ [], [], [], [] ]}
+-- this means that User 1's input is rejected and it is not user 2's turn
+
+Python->User=2
+-- this means that user 2 did not try to make a word (timeout for example)
+
+C->Python
+{ "User": 3, "Pool" : [ "P", "O", "L"], 
+"Words" : [ [], [], [], [] ]}
+-- this means that server has passed turn to user 3
+
+Python->C
+/Make?User=3&Word=LOP&Pool=POL
+-- this means that user 3 is trying to make word LOP using letters P, O, L from Pool
+
+C->Python
+{ "User" : 4, "Pool" : [ "S", "H", "E" ], 
+"Words" : [ [], [], [ "LOP" ], []]}
+-- this means that user 3 has made word LOP, it is now user 4's turn 
+
+Python->C
+/Make?User=4&Word=SLOP&Pool=S&Steal=3:1
+-- this means that user 1 has made word SLOP using letter S from Pool
+-- and from the first word made by user 3 (LOP) 
+
+C->Python
+
+{ "User" : 1, "Pool" : [ "G", "H", "E" ], 
+"Words" : [ [], [], [ ], [ "SLOP" ]] }
+
+Now, assume all users pass without making an attempt 
+C will add one more letter to pool 
+
+C->Python
+
+{ "User" : 1, "Pool" : [ "G", "H", "E", "T" ], 
+"Words" : [ [], [], [ ], [ "SLOP" ]] }
