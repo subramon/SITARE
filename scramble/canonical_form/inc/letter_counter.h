@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include "consts.h"
 extern int
-canonicalize_1(
+letter_counter(
     const char * const in_str, // input 
-    char cstr[2*NUM_ALPHABET]
+    uint8_t count[NUM_ALPHABET]
     );
