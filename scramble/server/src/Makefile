@@ -77,6 +77,8 @@ handler.o : ${RSUTILS_SRC_ROOT}/src/handler.c
 
 game_server : \
 	main.o \
+	bridge_init.o \
+	bridge_get_state.o \
 	\
 	handler.o \
 	webserver.o \
@@ -88,6 +90,8 @@ game_server : \
 	
 	gcc \
 	main.o \
+	bridge_init.o \
+	bridge_get_state.o \
 	\
 	handler.o \
 	webserver.o \

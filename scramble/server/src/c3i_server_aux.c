@@ -18,3 +18,13 @@ c3i_server_free_configs(
 {
   return NULL; 
 }
+void
+c3i_server_free_info(
+    c3i_server_info_t *ptr_I
+    )
+{
+  if ( ptr_I == NULL ) { return NULL; }
+  if ( ptr_I->L != NULL ) { lua_close(ptr_I->L); }
+  memset(ptr_I, 0, sizeof(c3i_server_info_t));
+  return NULL; 
+}

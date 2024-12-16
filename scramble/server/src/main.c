@@ -6,6 +6,8 @@
 
 #include "q_macros.h"
 #include "bridge_read_configs.h"
+#include "mk_lua_state.h"
+#include "bridge_init.h"
 // for webserver
 #include "web_struct.h"
 #include "webserver.h"
@@ -34,11 +36,17 @@ main(
   const char * const c3i_cfg_file  = argv[1];
   status = bridge_read_configs(c3i_cfg_file, &Cc3i, "read_c3i_server"); 
   cBYE(status);
+  // Initialize game 
+  Ic3i.L = mk_lua_state(); if ( Ic3i.L == NULL ) { go_BYE(-1); } 
+  status = luaL_dostring(Ic3i.L, "require 'game'");
+  status = bridge_init(Ic3i.L, Cc3i.nP0, Cc3i.nU); cBYE(status);
+
   Ic3i.C = &Cc3i;
   winfo.port        = Cc3i.port;
   winfo.get_req_fn  = c3i_server_get_req;
   winfo.proc_req_fn = c3i_server_proc_req;
   winfo.W = &Ic3i;
+  
   status = pthread_create(&l_c3i_server, NULL, &webserver, &winfo);
   cBYE(status);
 
@@ -52,5 +60,6 @@ main(
 BYE:
   // cleanup 
   c3i_server_free_configs(&Cc3i);
+  c3i_server_free_info(&Ic3i);
   return status;
 }

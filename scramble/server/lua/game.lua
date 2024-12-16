@@ -3,51 +3,50 @@ local JSON    = require 'RSUTILS/lua/JSON'
 local is_in   = require 'scramble/server/lua/is_in'
 
 game = {} -- TODO Should this be a global?
-game.H = {} --- history (words and creator)
+game.A = {} -- archive of words made which are no longer in play
+game.H = {} --- history (of which words were made, how and by whom)
 game.P = {} -- pool
 game.U = {} -- users (names and scores)
+game.W = {} -- words currently in play 
+game.C = 1 -- clock 
 
-pr = function()
+get_state = function()
   return JSON:encode(
-    {users = game.U, history = game.H, pool = game.P, }
+    {
+      clock = game.C,
+      archive = game.A, 
+      history = game.H, 
+      pool = game.P, 
+      users = game.U, 
+      words = game.W}
     )
 end
 
-init = function (U, nP0)
+init = function (nP0, nU)
   print("Initializing game")
-  local nU
-  if ( U ) then 
-    assert(type(U) == "table")
-    assert(#U > 0)
-    for k1 = 1, #U do 
-      local n1 = assert(U[k1].name)
-      assert(type(n1) == "string")
-      assert(#n1) >= 1)
-      for k2 = k1+1, #U do 
-        local n2 = assert(U[k2].name)
-        assert(n1 ~= n2)
-      end
-    end
-  else
-    U = {}
-    for k = 1, 4 do 
-      U[k] = { name = "user_" .. tostring(i), score = 0, }
-    end
+  -- nU =  number of users
+  nU = nU or 4 
+  assert(type(nU) == "number")
+  assert(nU >= 1)
+  local U = {}
+  for k = 1, nU do 
+    U[k] = { name = "user_" .. tostring(k), score = 0, }
   end 
   game.U  = U
   game.nU = #U
 
+  -- nP0 = minimum number of letters in pool
   nP0 = nP0 or 4 
-  -- nP0 = initial number of letters in pool
   assert(type(nP0) == "number")
   assert(nP0 >= 1)
+  local P = {}
   for i = 1, nP0 do 
     local r = math.random(1, 26)
-    game.P[#game.P+1] = assert(letters[r])
+    P[#P+1] = assert(letters[r])
   end 
+  game.P = P
   --=============================================
-  game.H = {}
-  game.nH = #H
+  return true
 end
 
 add_to_pool = function()
@@ -92,7 +91,7 @@ local function core_make_word(u, Pminus, Wminus, Wplus)
       assert(type(w1) == "string")
       -- check that word is in history 
       local found = false
-      for 1 = 1, #H do 
+      for i = 1, #H do 
         if ( H[i].word == w1) then
           found = true
           break
@@ -113,7 +112,7 @@ local function core_make_word(u, Pminus, Wminus, Wplus)
     for k1, w1 in ipairs(Wplus) do 
       assert(type(w1) == "string")
       -- check that word has not been made before
-      for 1 = 1, #H do 
+      for i = 1, #H do 
         assert(H[i].word ~= w1)
       end
       -- check no duplicates
@@ -133,11 +132,13 @@ local function core_make_word(u, Pminus, Wminus, Wplus)
   print("all_str = " .. all_str)
   -- Check that letters in Pminus and in Wminus add up to letters in Wplus
   -- Create canonical form of all_str
+  --[[ TODO 
   local tmp = {}
   if ( Pminus ) then 
     for k1, v1 in pairs(Pminus) do 
       if ( 
   -- STOP : check Wplus
+  --]]
   return true
 end
 

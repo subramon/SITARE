@@ -7,3 +7,7 @@ extern void
 c3i_server_free_configs(
     c3i_server_config_t *ptr_C
     );
+extern void
+c3i_server_free_info(
+    c3i_server_info_t *ptr_I
+    );

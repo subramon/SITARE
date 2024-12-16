@@ -6,13 +6,4 @@ typedef struct _c3i_server_config_t {
   int port;
 } c3i_server_config_t;
 
-typedef struct _c3i_server_info_t {
-  c3i_server_config_t *C;
-
-  uint64_t t_start;
-  uint64_t t_stop;
-  int status;
-
-} c3i_server_info_t;
-
  ]] 
