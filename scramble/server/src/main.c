@@ -1,13 +1,20 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <pthread.h>
+
 #include "q_macros.h"
-#include "mk_lua_state.h"
+#include "bridge_read_configs.h"
+// for webserver
+#include "web_struct.h"
+#include "webserver.h"
+#include "c3i_server.h"
+#include "c3i_server_aux.h"
+#include "c3i_server_get_req.h"
+#include "c3i_server_proc_req.h"
 
-#include "q_incs.h"
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
-#include "mk_lua_state.h"
-
-#define MAX_LEN_DIR_NAME 127
+int g_halt_called; 
 
 int
 main(
@@ -16,84 +23,34 @@ main(
     )
 {
   int status = 0;
-  lua_State *L = NULL;
-  char lcmd[1024];
-  const char * const lua_fn = "scramble/server/lua/game";
-  char run_fn[32];
+  // for c3i server
+  c3i_server_config_t Cc3i; memset(&Cc3i, 0, sizeof(c3i_server_config_t));
+  pthread_t l_c3i_server; memset(&l_c3i_server, 0, sizeof(pthread_t));
+  c3i_server_info_t Ic3i; memset(&Ic3i, 0, sizeof(c3i_server_info_t));
+  web_info_t winfo; memset(&winfo, 0, sizeof(web_info_t));
+  g_halt_called = 0;
+  //-----------------------------
+  if ( argc != 2 ) {  go_BYE(-1); }
+  const char * const c3i_cfg_file  = argv[1];
+  status = bridge_read_configs(c3i_cfg_file, &Cc3i, "read_c3i_server"); 
+  cBYE(status);
+  Ic3i.C = &Cc3i;
+  winfo.port        = Cc3i.port;
+  winfo.get_req_fn  = c3i_server_get_req;
+  winfo.proc_req_fn = c3i_server_proc_req;
+  winfo.W = &Ic3i;
+  status = pthread_create(&l_c3i_server, NULL, &webserver, &winfo);
+  cBYE(status);
 
-  L = mk_lua_state(); if ( L == NULL ) { go_BYE(-1); }
-  sprintf(lcmd, "rdfn = require '%s'", lua_fn); 
-  status = luaL_dostring(L, lcmd); 
-  if ( status != 0 ) { 
-    fprintf(stderr, "Error luaL_string=%s\n", lua_tostring(L,-1));
-  }
-  // initialize game 
-  status = luaL_dostring(L, "init()");
-  if ( status != 0 ) { 
-    fprintf(stderr, "Error luaL_string=%s\n", lua_tostring(L,-1));
-  }
-  for ( ; ; ) { 
-    char *lineptr = NULL; size_t n;
-    ssize_t nr = getline(&lineptr, &n, stdin);
-    if ( ( lineptr == NULL ) || ( n == 0 ) || ( *lineptr == '\n' ) ) { 
-      free_if_non_null(lineptr);
-      break;
-    }
-    printf("Command = %s", lineptr);
-    int n_in, n_out;
-    if ( lineptr[0] == 'p'  ) {
-      strcpy(run_fn, "pr"); n_in = 0; n_out = 1; 
-    }
-    else if ( lineptr[0] == 'a'  ) {
-      strcpy(run_fn, "add_to_pool"); n_in = 0; n_out = 1; 
-    }
-    else { 
-      printf("Unknown option. Skipping....\n");
-      continue;
-    }
-    status = luaL_dostring(L, lcmd); 
-    if ( status != 0 ) { 
-      fprintf(stderr, "Error luaL_string=%s\n", lua_tostring(L,-1));
-    }
-    int chk;
-    lua_getglobal(L, run_fn);
-    chk = lua_gettop(L); if ( chk != 1 ) { go_BYE(-1); }
-    chk = lua_type(L, -1); 
-    if ( !lua_isfunction(L, -1)) {
-      fprintf(stderr, "Lua Function %s undefined\n", run_fn);
-      lua_pop(L, 1);
-      go_BYE(-1);
-    }
-    // call lua function and check status 
-    status = lua_pcall(L, n_in, n_out, 0);
-    if ( status != 0 ) {
-      fprintf(stderr, "run_fn %s failed: %s\n", run_fn, lua_tostring(L, -1));
-      lua_pop(L, 1);
-      go_BYE(-1); 
-    }
-    chk = lua_gettop(L); if ( chk != n_out ) { go_BYE(-1); }
-    if ( lineptr[0] == 'p'  ) {
-      if ( !lua_isstring(L, 1) ) { go_BYE(-1); }
-      const char *cptr = lua_tostring(L, -1);
-      if ( cptr == NULL ) { go_BYE(-1); }
-      fprintf(stdout, "%s\n", cptr);
-    } 
-    else if ( lineptr[0] == 'a'  ) {
-      if ( !lua_isnumber(L, 1) ) { go_BYE(-1); }
-      int nP = lua_tonumber(L, -1);
-      fprintf(stdout, "#P = %d \n", nP);
-    }
-    else {
-      go_BYE(-1);
-    }
-    // clean up lua stack 
-    lua_pop(L, n_out);
-    chk = lua_gettop(L); if ( chk != 0 ) { go_BYE(-1); }
+  // Wait for threads to finish 
+  pthread_join(l_c3i_server, NULL);
+  if ( Ic3i.status != 0 ) { go_BYE(-1); }
+  // Check all queues should be empty at end
+  c3i_server_stats(&Cc3i, &Ic3i); cBYE(status);  
 
-    free_if_non_null(lineptr);
-  }
-
-  printf("C: All done\n");
+  fprintf(stdout, "%s completed successfully\n", argv[0]);
 BYE:
-  if ( L != NULL ) { lua_close(L); }
+  // cleanup 
+  c3i_server_free_configs(&Cc3i);
+  return status;
 }
