@@ -16,6 +16,8 @@ c3i_server_free_configs(
     c3i_server_config_t *ptr_C
     )
 {
+  if ( ptr_C == NULL ) { return; } 
+  free_if_non_null(ptr_C->word_list);
   return;
 }
 void

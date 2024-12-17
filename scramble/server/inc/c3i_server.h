@@ -6,6 +6,7 @@ typedef struct _c3i_server_config_t {
   uint32_t nP0; // minimum number of letters in pool 
   uint32_t nU;  // number of users
   int port; 
+  char *word_list;
 } c3i_server_config_t;
 //STOP_FOR_CDEF
 

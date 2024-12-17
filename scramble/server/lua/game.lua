@@ -1,3 +1,4 @@
+local cutils  = require 'libcutils'
 local letters = require 'scramble/server/lua/letters'
 local JSON    = require 'RSUTILS/lua/JSON'
 local is_in   = require 'scramble/server/lua/is_in'
@@ -51,6 +52,7 @@ game.H = {} --- history (of which words were made, how and by whom)
 game.P = {} -- pool
 game.U = {} -- users (names and scores)
 game.W = {} -- words currently in play 
+game.D = {} -- dictionary of acceptable words 
 game.C = 1 -- clock 
 
 --=============================================================
@@ -102,6 +104,8 @@ local function check_Wplus(Wplus)
   assert(type(Wplus) == "table")
   for k1, w1 in ipairs(Wplus) do 
     assert(type(w1) == "string")
+    -- check that word exists in dictionary 
+    assert(game.D[w1])
     -- check that word has not been made before
     for i = 1, #game.H do 
       assert(game.H[i].word ~= w1)
@@ -129,7 +133,7 @@ get_state = function()
     )
 end
 
-init = function (nP0, nU)
+init = function (nP0, nU, word_list)
   print("Initializing game")
   -- nU =  number of users
   nU = nU or 4 
@@ -153,6 +157,39 @@ init = function (nP0, nU)
   end 
   game.P = P
   game.nP0 = nP0
+  --=============================================
+  assert(type(word_list) == "string")
+  assert(cutils.isfile(word_list))
+  local tmp= {}
+    -- read the lines in table 'lines'
+  for line in io.lines(word_list) do
+    table.insert(tmp, line)
+  end
+  assert(#tmp > 0)
+  game.D = {}
+  for i, v in ipairs(tmp) do 
+    assert(not game.D[v], "duplicate = " .. v) -- checks for no duplicates
+    game.D[v] = true
+  end
+  --=============================================
+  -- create letter probabilities
+  letter_counts = {}
+  for i, w in ipairs(tmp) do
+    for k = 1, #w do
+      local letter = string.sub(w, k, k)
+      if letter_counts[letter] then
+        letter_counts[letter] = letter_counts[letter] + 1 
+      else 
+        letter_counts[letter] = 0
+      end
+    end
+  end
+  local num_letters = 0
+  for k, v in pairs(letter_counts) do 
+    num_letters = num_letters + 1
+  end 
+  assert(num_letters == 26)
+
   --=============================================
   return true
 end

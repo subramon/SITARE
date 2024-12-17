@@ -1,5 +1,7 @@
-local ffi          = require 'ffi'
-local x            = require 'c3i_server';  ffi.cdef(x)
+local ffi       = require 'ffi'
+local cutils    = require 'libcutils'
+local stringify = require 'RSUTILS/lua/stringify'
+local x         = require 'c3i_server';  ffi.cdef(x)
 
 local function read_c3i_server_configs(
   cC -- this is struct with C  configs
@@ -21,6 +23,12 @@ local function read_c3i_server_configs(
   assert(type(nP0) == "number")
   assert(nP0 > 0)
   cC[0].nP0 = nP0 
+  --====================================
+  local word_list = assert(glC.word_list)
+  assert(type(word_list) == "string")
+  assert(cutils.isfile(word_list), "File not found " .. word_list)
+  cC[0].word_list = stringify(word_list)
+  --====================================
   return true
 end
 return read_c3i_server_configs 

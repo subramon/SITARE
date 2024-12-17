@@ -39,7 +39,8 @@ main(
   // Initialize game 
   Ic3i.L = mk_lua_state(); if ( Ic3i.L == NULL ) { go_BYE(-1); } 
   status = luaL_dostring(Ic3i.L, "require 'game'");
-  status = bridge_init(Ic3i.L, Cc3i.nP0, Cc3i.nU); cBYE(status);
+  status = bridge_init(Ic3i.L, Cc3i.nP0, Cc3i.nU, Cc3i.word_list); 
+  cBYE(status);
 
   Ic3i.C = &Cc3i;
   winfo.port        = Cc3i.port;

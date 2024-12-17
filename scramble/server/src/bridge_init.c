@@ -7,7 +7,8 @@ int
 bridge_init(
     lua_State *L,
     uint32_t nP0,
-    uint32_t nU
+    uint32_t nU,
+    const char * const word_list
     )
 {
   int status = 0;
@@ -22,9 +23,10 @@ bridge_init(
   }
   lua_pushnumber(L, nP0); 
   lua_pushnumber(L, nU); 
-  chk = lua_gettop(L); if ( chk != 3 ) { go_BYE(-1); }
+  lua_pushstring(L, word_list); 
+  chk = lua_gettop(L); if ( chk != 4 ) { go_BYE(-1); }
   // call lua function and check status 
-  status = lua_pcall(L, 2, 1, 0);
+  status = lua_pcall(L, 3, 1, 0);
   if ( status != 0 ) {
     fprintf(stderr, "lua_fn %s failed: %s\n", lua_fn, lua_tostring(L, -1));
     lua_pop(L, 1);
