@@ -79,6 +79,8 @@ game_server : \
 	main.o \
 	bridge_init.o \
 	bridge_get_state.o \
+	bridge_make_word.o \
+	bridge_add_letter.o \
 	\
 	handler.o \
 	webserver.o \
@@ -92,6 +94,8 @@ game_server : \
 	main.o \
 	bridge_init.o \
 	bridge_get_state.o \
+	bridge_make_word.o \
+	bridge_add_letter.o \
 	\
 	handler.o \
 	webserver.o \

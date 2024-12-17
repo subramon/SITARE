@@ -3,6 +3,8 @@
 #include "c3i_server.h" 
 #include "c3i_server_get_req.h" 
 #include "bridge_get_state.h" 
+#include "bridge_add_letter.h" 
+#include "bridge_make_word.h" 
 #include "c3i_server_proc_req.h" 
 
 extern int g_halt_called; 
@@ -55,10 +57,15 @@ c3i_server_proc_req(
       break;
       //--------------------------------------------------------
     case AddLetter :  
-      sprintf(outbuf, "{ \"%s\" : \"OK\" }", api);
+      {
+        int nP;
+        status = bridge_add_letter(L, &nP); cBYE(status); 
+        sprintf(outbuf, "{ \"NumInPool\" : \"%d\" }", nP);
+      }
       break;
       //--------------------------------------------------------
     case MakeWord :  
+      status = bridge_make_word(L, args); cBYE(status);
       sprintf(outbuf, "{ \"%s\" : \"OK\" }", api);
       break;
       //--------------------------------------------------------
