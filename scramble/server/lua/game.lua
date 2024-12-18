@@ -2,6 +2,8 @@ local cutils  = require 'libcutils'
 local letters = require 'scramble/server/lua/letters'
 local JSON    = require 'RSUTILS/lua/JSON'
 local is_in   = require 'scramble/server/lua/is_in'
+local mk_letter_weights  = require 'scramble/server/lua/mk_letter_weights'
+local weighted_selection = require 'scramble/server/lua/weighted_selection'
 
 local function cat_with_nulls(X, nX)
   local str = ""
@@ -54,6 +56,7 @@ game.U = {} -- users (names and scores)
 game.W = {} -- words currently in play 
 game.D = {} -- dictionary of acceptable words 
 game.C = 1 -- clock 
+aame.lw = {} -- letter weights
 
 --=============================================================
 local function check_Wminus(Wminus) -- check Wminus
@@ -172,31 +175,24 @@ init = function (nP0, nU, word_list)
     game.D[v] = true
   end
   --=============================================
-  -- create letter probabilities
-  letter_counts = {}
-  for i, w in ipairs(tmp) do
-    for k = 1, #w do
-      local letter = string.sub(w, k, k)
-      if letter_counts[letter] then
-        letter_counts[letter] = letter_counts[letter] + 1 
-      else 
-        letter_counts[letter] = 0
-      end
-    end
-  end
-  local num_letters = 0
-  for k, v in pairs(letter_counts) do 
-    num_letters = num_letters + 1
-  end 
-  assert(num_letters == 26)
-
+  game.lw = mk_letter_weights(word_list) 
+  assert(type(game.lw) == "table")
   --=============================================
   return true
 end
 
 add_letter = function()
-  local r = math.random(1, 26)
-  game.P[#game.P+1] = assert(letters[r])
+  local version = 1
+  local to_add
+  if ( version == 0 ) then 
+    local r = math.random(1, 26)
+    to_add = assert(letters[r])
+  elseif ( version == 1 ) then 
+    to_add = weighted_selection(game.lw)
+  else 
+    error("Unknown version in add_letter()")
+  end
+  game.P[#game.P+1] = to_add
   return #game.P
 end
 
