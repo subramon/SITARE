@@ -1,5 +1,6 @@
 #ifndef __GAME_STATE_H
 #define __GAME_STATE_H
+#include <stdint.h>
 
 //START_FOR_CDEF
 typedef struct _game_state_t {

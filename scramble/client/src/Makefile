@@ -41,8 +41,7 @@ CFLAGS += -Wuninitialized
 
 INCS := -I../inc/ 
 INCS += -I${RSUTILS_SRC_ROOT}/inc/ 
-INCS += -I${CMEM_SRC_ROOT}/inc/ 
-INCS += -I${SCLR_SRC_ROOT}/inc/ 
+INCS += -I${RSLUTILS_SRC_ROOT}/inc/ 
 
 # LUAJIT_SO := /usr/lib/x86_64-linux-gnu/libluajit-5.1.so.2
 LUAJIT_SO := /usr/local/lib/libluajit-5.1.so
@@ -53,23 +52,36 @@ LIBS += -levent
 LIBS += -lcurl 
 
 MYLIBS += ${RSUTILS_SRC_ROOT}/src/librsutils.so 
+MYLIBS += ${RSLUTILS_SRC_ROOT}/src/librslutils.so 
 
 
-all: game_client 
+all: game_client  ../lua/game_state.lua
+
+
+../lua/game_state.lua : ../inc/game_state.h
+	echo " return [[ " > ../lua/game_state.lua 
+	luajit ${RSUTILS_SRC_ROOT}/lua/cli_for_cdef.lua  \
+		../inc/game_state.h \
+		>> ../lua/game_state.lua 
+	echo " ]] " >> ../lua/game_state.lua 
+
+CC=gcc
 
 .c.o :
 	$(CC) -c -o $@ $< $(CFLAGS)  $(INCS)
 
 game_client : \
 	main.o \
+	bridge_read_state.o \
 	${MYLIBS} \
 	
 	gcc \
 	main.o \
+	bridge_read_state.o \
 	\
 	-o game_client  \
 	${MYLIBS} \
 	${LIBS} ${LUAJIT_SO}
 
 clean :
-	rm -f *.o *.so game_client _* 
+	rm -f *.o *.so game_client _*  ../lua/game_state.lua
