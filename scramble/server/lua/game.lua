@@ -56,7 +56,7 @@ game.U = {} -- users (names and scores)
 game.W = {} -- words currently in play 
 game.D = {} -- dictionary of acceptable words 
 game.C = 1 -- clock 
-aame.lw = {} -- letter weights
+game.lw = {} -- letter weights
 
 --=============================================================
 local function check_Wminus(Wminus) -- check Wminus

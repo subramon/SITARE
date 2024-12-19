@@ -25,7 +25,7 @@ function read_state(
   local all_Wminus = {}
   local H = assert(J.history)
   assert(type(H) == "table")
-  for i = 1, nH do 
+  for i = 1, #H do 
     local Wplus = H[i].Wplus
     assert(type(Wplus) == "table")
     assert(#Wplus >= 1)
@@ -44,11 +44,13 @@ function read_state(
   -- subtract all_Wminus from all_Wplus to create curr_words
   -- all_Wminus becomes prev_words
   if ( #all_Wminus > 0 ) then
-
+    cS[0].prev_words, cS[0].nprev = tbl_to_C_2d(all_Wminus)
   end
-
-
-
+  -- add letters from ppol
+  local P = assert(J.pool)
+  assert(type(P) == "table")
+  assert(#P > 1)
+  cS[0].letters, cS[0].nlttr = tbl_to_C_2d(P)
 
   -- TODO fill in the blanks
   return true

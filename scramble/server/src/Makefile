@@ -1,7 +1,7 @@
-# CFLAGS := -g -O0 # optimizations cause buffer overflow on maas
-CFLAGS := -O3
+CFLAGS := -g -O0 # optimizations cause buffer overflow on maas
+# CFLAGS := -O3
 
-# CFLAGS += -DDEBUG
+CFLAGS += -DDEBUG
 CFLAGS += -fopenmp
 CFLAGS += -fstrict-aliasing 
 CFLAGS += -std=gnu99 -Wall -fPIC -W -Waggregate-return -Wcast-align 
@@ -46,6 +46,7 @@ INCS += -I${SCLR_SRC_ROOT}/inc/
 
 # LUAJIT_SO := /usr/lib/x86_64-linux-gnu/libluajit-5.1.so.2
 LUAJIT_SO := /usr/local/lib/libluajit-5.1.so
+LUAJIT_SO := /home/subramon/luajit/src/libluajit.so
 LIBS := -lm 
 LIBS += -lpthread 
 LIBS += -ljansson

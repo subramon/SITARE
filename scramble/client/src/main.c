@@ -9,17 +9,37 @@
 #include "q_macros.h"
 // utilities 
 #include "free_2d_array.h"
+#include "get_time_usec.h"
 #include "file_as_str.h"
 #include "cat_to_buf.h"
+// connect to server
+#include "setup_curl.h"
+#include "execute.h"
 
 #include "game_state.h"
 #include "bridge_read_state.h"
 #include "shuffle.h"
 #include "mk_lua_state.h"
 
+#define MAX_NUM_SELECTIONS 32 // max number to pick frm pool/words
+
+static uint32_t
+calc_num_iters(
+    uint32_t i
+)
+{
+
+  if ( i == 0 ) { 
+    return 1; 
+  }
+  else if ( i == 2 ) { 
+    return i;
+  }
+  return 8; // TODO
+}
 static int
 select_strings(
-    int n_to_pick,
+    uint32_t n_to_pick,
     char **words, 
     uint32_t nwords, 
     char **ptr_buf,
@@ -28,20 +48,21 @@ select_strings(
     )
 {
   int status = 0;
+  int8_t idxs_for_perm[MAX_NUM_SELECTIONS];
+
   if ( n_to_pick == 0 ) { return status; }
   if ( nwords == 0 ) { return status; }
-  int8_t *widx = NULL; 
 
-  widx = malloc(nwords * sizeof(int8_t)); // TODO P3 avoid malloc 
-  for ( uint32_t i = 0; i < nwords; i++ ) { widx[i] = (int8_t)i; }
-  randomize_I1(widx, (int)nwords); cBYE(status); 
-  for ( int i = 0; i < n_to_pick; i++ ) { 
-    int idx = widx[i]; 
+  for ( uint32_t i = 0; i < nwords; i++ ) { 
+    idxs_for_perm[i] = (int8_t)i; 
+  }
+  randomize_I1(idxs_for_perm, (int)nwords); cBYE(status); 
+  for ( uint32_t i = 0; i < n_to_pick; i++ ) { 
+    int idx = (int)idxs_for_perm[i]; 
     status = cat_to_buf(ptr_buf, ptr_bufsz, ptr_buflen, words[idx], 0);
     cBYE(status);
   }
 BYE:
-  free_if_non_null(widx);
   return status;
 }
 
@@ -68,11 +89,13 @@ main(
   int status = 0;
   lua_State *L = NULL;
   CURL *ch = NULL; // curl handle
-#define CMD_LEN 1024-1
-  char cmd[CMD_LEN+1];  memset(cmd, 0, CMD_LEN+1);
+#define URL_LEN 1024-1
+  char url[URL_LEN+1];  memset(url, 0, URL_LEN+1);
   game_state_t S; memset(&S, 0, sizeof(game_state_t));
   char *server_response = NULL;
   char *buf = NULL; uint32_t buflen = 0; uint32_t bufsz = 64; 
+  curl_userdata_t curl_userdata; 
+  memset(&curl_userdata, 0, sizeof(curl_userdata_t));
 
   if ( argc != 4 ) { go_BYE(-1); }
   int user = atoi(argv[1]);
@@ -84,32 +107,59 @@ main(
   int chk = lua_gettop(L); if ( chk != 0 ) { go_BYE(-1); }
 
   // for curl 
-  status = setup_curl(&ch); cBYE(status);
+  status = setup_curl(&curl_userdata, &ch); cBYE(status);
 
   buf = malloc(bufsz); memset(buf, 0, bufsz); 
 
-  for ( int i = 1; i <= 6; i++ ) { 
+  for ( int try = 0; ; try++ ) { 
+    long http_code;
+    /* for testing 
     char json_file[32];sprintf(json_file, "../test/%d.json", i); 
     server_response = file_as_str(json_file); 
+    */
     // Get state from server in server_response
-    sprintf(cmd, "http://%s:%d/GetState", server, port);
+    sprintf(url, "http://%s:%d/GetState", server, port);
+    memset(curl_userdata.base, 0, curl_userdata.size);
+    curl_userdata.offset = 0; 
+    status = execute(ch, url, &http_code); cBYE(status);
+    if ( http_code != 200 ) { go_BYE(-1); }
     // Load state 
-    status = bridge_read_state(L, server_response, &S); 
+    status = bridge_read_state(L, curl_userdata.base, &S); 
     cBYE(status); 
-    // Select nw words
-    int nw = 1; int nl = 1; 
-    status = select_strings(nw, S.curr_words, S.ncurr, &buf, &bufsz, &buflen);
-    cBYE(status); 
-    // Select nl letters
-    status = select_strings(nl, S.letters, S.nlttr, &buf, &bufsz, &buflen);
-    cBYE(status); 
+    uint64_t t_start = get_time_usec(); 
+    for ( uint32_t i = 0; i < S.nlttr; i++ ) {
+      uint32_t outer_iters = calc_num_iters(i);
+      for ( uint32_t ii = 0; ii < outer_iters; ii++ ) {
+        // Select i letters
+        status = select_strings(i, S.letters, S.nlttr, 
+            &buf, &bufsz, &buflen);
+        cBYE(status); 
+        for ( uint32_t j = 0; j < S.ncurr; j++ ) { 
+          uint32_t inner_iters = calc_num_iters(j);
+          for ( uint32_t jj = 0; jj < inner_iters; jj++ ) {
+            if ( ( j == 0 ) && ( i <= 2 ) ) { continue; } 
+            // Select j words
+            status = select_strings(j, S.curr_words, S.ncurr, 
+                &buf, &bufsz, &buflen);
+            cBYE(status); 
+          }
+        }
+        printf("%s\n", buf);
+        memset(buf, 0, bufsz); buflen = 0; 
+      }
+    }
 
+    // Add letter 
+    sprintf(url, "http://%s:%d/AddLetter", server, port);
+    memset(curl_userdata.base, 0, curl_userdata.size);
+    curl_userdata.offset = 0; 
+    status = execute(ch, url, &http_code); cBYE(status);
+    if ( http_code != 200 ) { go_BYE(-1); }
     // cleanup
     free_state(&S); 
-
-    free_if_non_null(server_response);
-    sleep(1);
-    printf("Attempt %d \n", i);
+    memset(curl_userdata.base, 0, curl_userdata.size);
+    curl_userdata.offset = 0; 
+    printf("Attempt %d \n", try);
   }
 
 BYE:
@@ -133,6 +183,7 @@ BYE:
   }
   */
   curl_global_cleanup();
+  free_if_non_null(curl_userdata.base);
   // STOP: For curl 
   return status;
 }

@@ -31,6 +31,7 @@ main(
   c3i_server_info_t Ic3i; memset(&Ic3i, 0, sizeof(c3i_server_info_t));
   web_info_t winfo; memset(&winfo, 0, sizeof(web_info_t));
   g_halt_called = 0;
+  int chk;
   //-----------------------------
   if ( argc != 2 ) {  go_BYE(-1); }
   const char * const c3i_cfg_file  = argv[1];
@@ -39,6 +40,7 @@ main(
   // Initialize game 
   Ic3i.L = mk_lua_state(); if ( Ic3i.L == NULL ) { go_BYE(-1); } 
   status = luaL_dostring(Ic3i.L, "require 'game'");
+  chk = lua_gettop(Ic3i.L); if ( chk != 0 ) { go_BYE(-1); }
   status = bridge_init(Ic3i.L, Cc3i.nP0, Cc3i.nU, Cc3i.word_list); 
   cBYE(status);
 

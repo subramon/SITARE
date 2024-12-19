@@ -75,6 +75,7 @@ game_client : \
 	bridge_read_state.o \
 	shuffle.o \
 	setup_curl.o \
+	execute.o \
 	${MYLIBS} \
 	
 	gcc \
@@ -82,6 +83,7 @@ game_client : \
 	bridge_read_state.o \
 	shuffle.o \
 	setup_curl.o \
+	execute.o \
 	\
 	-o game_client  \
 	${MYLIBS} \
