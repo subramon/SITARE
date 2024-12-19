@@ -8,8 +8,10 @@ typedef struct _game_state_t {
   uint32_t nprev; 
   char **curr_words;
   uint32_t ncurr; 
-  char *letters;
-  uint32_t nl;
+  char **letters; 
+  uint32_t nlttr;
+  // letters[i] is a 1 char string and could have been kept as char *letters
+  // but this way, it is consistent treatment with words
   int clock; 
 } game_state_t; 
 //STOP_FOR_CDEF

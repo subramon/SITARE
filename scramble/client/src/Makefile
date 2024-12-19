@@ -1,7 +1,7 @@
-# CFLAGS := -g -O0 # optimizations cause buffer overflow on maas
-CFLAGS := -O3
+CFLAGS := -g -O0 # optimizations cause buffer overflow on maas
+# CFLAGS := -O3
 
-# CFLAGS += -DDEBUG
+CFLAGS += -DDEBUG
 CFLAGS += -fopenmp
 CFLAGS += -fstrict-aliasing 
 CFLAGS += -std=gnu99 -Wall -fPIC -W -Waggregate-return -Wcast-align 
@@ -73,11 +73,15 @@ CC=gcc
 game_client : \
 	main.o \
 	bridge_read_state.o \
+	shuffle.o \
+	setup_curl.o \
 	${MYLIBS} \
 	
 	gcc \
 	main.o \
 	bridge_read_state.o \
+	shuffle.o \
+	setup_curl.o \
 	\
 	-o game_client  \
 	${MYLIBS} \

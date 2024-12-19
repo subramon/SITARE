@@ -1,0 +1,4 @@
+export LUA_PATH="$HOME/?.lua;$HOME/SITARE/?.lua;;"
+export RSUTILS_SRC_ROOT=$HOME/RSUTILS/
+export RSLUTILS_SRC_ROOT=$HOME/RSLUTILS/
+export LUA_CPATH="$RSUTILS_SRC_ROOT/binding/src/?.so;;"

@@ -26,7 +26,7 @@ bridge_read_state(
   lua_pushlightuserdata(L, game_state); 
   chk = lua_gettop(L); if ( chk != 3 ) { go_BYE(-1); }
   // call lua function and check status 
-  status = lua_pcall(L, 1, 1, 0);
+  status = lua_pcall(L, 2, 1, 0);
   if ( status != 0 ) {
     fprintf(stderr, "lua_fn %s failed: %s\n", lua_fn, lua_tostring(L, -1));
     lua_pop(L, 1);

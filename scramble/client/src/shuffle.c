@@ -62,7 +62,7 @@ randomize(
 {
   // Use a different seed value so that we don't get same
   // result each time we run this program
-  srand(time(NULL));
+  srand((unsigned int)time(NULL));
 
   // Start from the last element and swap one by one. We don't
   // need to run for the first element that's why i > 0
@@ -82,7 +82,7 @@ randomize_I1(
 {
   // Use a different seed value so that we don't get same
   // result each time we run this program
-  srand(time(NULL));
+  srand((unsigned int)time(NULL)); // TODO P2 Initialize this once outside 
 
   // Start from the last element and swap one by one. We don't
   // need to run for the first element that's why i > 0
