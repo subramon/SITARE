@@ -16,7 +16,9 @@
 #include "setup_curl.h"
 #include "execute.h"
 
+#include "canonicalize.h"
 #include "game_state.h"
+#include "consts.h"
 #include "bridge_read_state.h"
 #include "shuffle.h"
 #include "mk_lua_state.h"
@@ -25,20 +27,25 @@
 
 static uint32_t
 calc_num_iters(
-    uint32_t i
+    uint32_t i,
+    uint32_t n
 )
 {
 
   if ( i == 0 ) { 
     return 1; 
   }
+  else if ( i == 1 ) { 
+    return n;
+  }
   else if ( i == 2 ) { 
-    return i;
+    return (n * (n-1) / 2);
   }
   return 8; // TODO
 }
 static int
 select_strings(
+    struct drand48_data *ptr_rand_buf,
     uint32_t n_to_pick,
     char **words, 
     uint32_t nwords, 
@@ -56,7 +63,7 @@ select_strings(
   for ( uint32_t i = 0; i < nwords; i++ ) { 
     idxs_for_perm[i] = (int8_t)i; 
   }
-  randomize_I1(idxs_for_perm, (int)nwords); cBYE(status); 
+  randomize_I1(ptr_rand_buf, idxs_for_perm, (int)nwords); cBYE(status); 
   for ( uint32_t i = 0; i < n_to_pick; i++ ) { 
     int idx = (int)idxs_for_perm[i]; 
     status = cat_to_buf(ptr_buf, ptr_bufsz, ptr_buflen, words[idx], 0);
@@ -96,7 +103,10 @@ main(
   char *buf = NULL; uint32_t buflen = 0; uint32_t bufsz = 64; 
   curl_userdata_t curl_userdata; 
   memset(&curl_userdata, 0, sizeof(curl_userdata_t));
+  struct drand48_data rand_buf; 
+  memset(&rand_buf, 0, sizeof(struct drand48_data));
 
+  srand48_r((long int)time(NULL), &rand_buf); 
   if ( argc != 4 ) { go_BYE(-1); }
   int user = atoi(argv[1]);
   const char * const server = argv[2]; 
@@ -105,6 +115,10 @@ main(
   L = mk_lua_state(); if ( L == NULL ) { go_BYE(-1); }
   status = luaL_dostring(L, "require 'scramble/client/lua/read_state'");
   int chk = lua_gettop(L); if ( chk != 0 ) { go_BYE(-1); }
+
+  status = luaL_dostring(L, "can_str_to_anagrams = require "
+      "'scramble/anagrams/lua/words_to_anagrams'");
+  chk = lua_gettop(L); if ( chk != 0 ) { go_BYE(-1); }
 
   // for curl 
   status = setup_curl(&curl_userdata, &ch); cBYE(status);
@@ -127,24 +141,42 @@ main(
     status = bridge_read_state(L, curl_userdata.base, &S); 
     cBYE(status); 
     uint64_t t_start = get_time_usec(); 
+// #define pragma omp parallel for 
     for ( uint32_t i = 0; i < S.nlttr; i++ ) {
-      uint32_t outer_iters = calc_num_iters(i);
+      char can_str[MAX_LEN_CANONICAL_STR];
+      memset(can_str, 0, MAX_LEN_CANONICAL_STR);
+      uint32_t outer_iters = calc_num_iters(i, S.nlttr);
       for ( uint32_t ii = 0; ii < outer_iters; ii++ ) {
         // Select i letters
-        status = select_strings(i, S.letters, S.nlttr, 
+        status = select_strings(&rand_buf, i, S.letters, S.nlttr, 
             &buf, &bufsz, &buflen);
         cBYE(status); 
         for ( uint32_t j = 0; j < S.ncurr; j++ ) { 
-          uint32_t inner_iters = calc_num_iters(j);
+          uint32_t inner_iters = calc_num_iters(j, S.ncurr);
           for ( uint32_t jj = 0; jj < inner_iters; jj++ ) {
             if ( ( j == 0 ) && ( i <= 2 ) ) { continue; } 
             // Select j words
-            status = select_strings(j, S.curr_words, S.ncurr, 
+            status = select_strings(&rand_buf, j, S.curr_words, S.ncurr, 
                 &buf, &bufsz, &buflen);
             cBYE(status); 
           }
         }
-        printf("%s\n", buf);
+        if ( buflen <= 2 ) {  // words should have at least 3 letters
+        }
+        else { // this is a candidate
+          status = canonicalize_1(buf, can_str); cBYE(status);
+          printf("%s %s\n", buf, can_str);
+          if ( buflen < 6 ) { 
+            // can be only a single word
+
+          }
+          else {
+            // break up letters into 2 word candidates
+            // We will extend to > 2 in subsequent versions 
+
+            go_BYE(-1); // TODO 
+          }
+        }
         memset(buf, 0, bufsz); buflen = 0; 
       }
     }

@@ -1,17 +1,17 @@
 #include <stdio.h>
 #include <string.h>
-#include "macros.h"
+#include "q_macros.h"
 #include "letter_counter.h"
 #include "canonicalize.h"
 // We assume that the counts cannot exceed 16
 int
 canonicalize_1(
     const char * const in_str, // input 
-    char cstr[2*NUM_ALPHABET+1]
+    char can_str[MAX_LEN_CANONICAL_STR]
     )
 {
   int status = 0;
-  memset(cstr, 0, 2*NUM_ALPHABET+1);
+  memset(can_str, 0, 2*NUM_ALPHABET+1);
   static char lc[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     'A', 'B', 'C', 'D', 'E', 'F' };
   uint8_t counts[NUM_ALPHABET];
@@ -20,8 +20,8 @@ canonicalize_1(
   int idx = 0;
   for ( int i = 0; i < NUM_ALPHABET; i++ ) { 
     if ( counts[i] > 0 ) { 
-      cstr[idx++] = 'a' + i;
-      cstr[idx++] = lc[counts[i]];
+      can_str[idx++] = 'a' + i;
+      can_str[idx++] = lc[counts[i]];
     }
   }
 BYE:

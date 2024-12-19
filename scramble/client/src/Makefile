@@ -76,6 +76,8 @@ game_client : \
 	shuffle.o \
 	setup_curl.o \
 	execute.o \
+	canonicalize.o \
+	letter_counter.o \
 	${MYLIBS} \
 	
 	gcc \
@@ -84,6 +86,8 @@ game_client : \
 	shuffle.o \
 	setup_curl.o \
 	execute.o \
+	canonicalize.o \
+	letter_counter.o \
 	\
 	-o game_client  \
 	${MYLIBS} \

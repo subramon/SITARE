@@ -1,7 +1,7 @@
-#include "stdio.h"
-#include "stdbool.h"
-#include "limits.h"
-#include "macros.h"
+#include <stdio.h>
+#include <stdbool.h>
+#include <limits.h>
+#include "q_macros.h"
 #include "consts.h"
 #include "letter_counter.h"
 int

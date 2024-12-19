@@ -1,3 +1,4 @@
+#include <stdlib.h>
 extern void 
 swap_I1(
     int8_t *a, 
@@ -20,11 +21,13 @@ printArray(
     );
 extern void 
 randomize_I1(
+    struct drand48_data *ptr_rand_buf,
     int8_t arr[], 
     int n 
     );
 extern void 
 randomize(
+    struct drand48_data *ptr_rand_buf,
     int arr[], 
     int n 
     );
