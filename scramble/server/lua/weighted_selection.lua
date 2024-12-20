@@ -1,4 +1,4 @@
-local letters = require 'scramble/server/lua/letters'
+local letters = require 'letters'
 local function weighted_selection(A)
   assert(type(A) == "table")
   local rnum = math.random()

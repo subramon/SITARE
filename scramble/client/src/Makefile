@@ -73,6 +73,7 @@ CC=gcc
 game_client : \
 	main.o \
 	bridge_read_state.o \
+	bridge_anagram.o \
 	shuffle.o \
 	setup_curl.o \
 	execute.o \
@@ -83,6 +84,7 @@ game_client : \
 	gcc \
 	main.o \
 	bridge_read_state.o \
+	bridge_anagram.o \
 	shuffle.o \
 	setup_curl.o \
 	execute.o \

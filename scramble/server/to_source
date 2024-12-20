@@ -1,4 +1,3 @@
-unset SITARE_SRC_ROOT
 unset SCRAMBLE_SRC_ROOT
 unset RSUTILS_SRC_ROOT
 unset RSLUTILS_SRC_ROOT
@@ -9,8 +8,7 @@ unset LUA_CPATH
 export RSUTILS_SRC_ROOT=$HOME/RSUTILS/
 export RSLUTILS_SRC_ROOT=$HOME/RSLUTILS/
 export SCRAMBLE_SRC_ROOT=$HOME/SITARE/scramble/
-export SITARE_SRC_ROOT=$HOME/SITARE/
-export LUA_PATH="${SCRAMBLE_SRC_ROOT}/server/lua/?.lua;${SITARE_SRC_ROOT}/?.lua;${HOME}/?.lua;;"
+export LUA_PATH="${SCRAMBLE_SRC_ROOT}/server/lua/?.lua;${SCRAMBLE_SRC_ROOT}/client/lua/?.lua;${HOME}/?.lua;;"
 export LUA_CPATH="${RSUTILS_SRC_ROOT}/binding/src/?.so;;"
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${RSUTILS_SRC_ROOT}/src/:${RSLUTILS_SRC_ROOT}:/usr/local/lib/"
 export PATH=$PATH:$SCRAMBLE_SRC_ROOT/server/src/

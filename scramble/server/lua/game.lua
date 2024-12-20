@@ -1,9 +1,9 @@
 local cutils  = require 'libcutils'
-local letters = require 'scramble/server/lua/letters'
+local letters = require 'letters'
 local JSON    = require 'RSUTILS/lua/JSON'
-local is_in   = require 'scramble/server/lua/is_in'
-local mk_letter_weights  = require 'scramble/server/lua/mk_letter_weights'
-local weighted_selection = require 'scramble/server/lua/weighted_selection'
+local is_in   = require 'is_in'
+local mk_letter_weights  = require 'mk_letter_weights'
+local weighted_selection = require 'weighted_selection'
 
 local function cat_with_nulls(X, nX)
   local str = ""

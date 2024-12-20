@@ -1,12 +1,12 @@
 local ffi = require 'ffi'
 local cutils = require 'libcutils'
-local wordfile = "../../word_list"
-assert(cutils.isfile(wordfile))
+-- local wordfile = "../../word_list"
 
 -- http://lua-users.org/wiki/FileInputOutput
 
 -- see if the file exists
 local function file_exists(file)
+  assert(type(file) == "string")
   local f = io.open(file, "rb")
   if f then f:close() end
   return f ~= nil
@@ -15,6 +15,7 @@ end
 -- get all lines from a file, returns an empty
 -- list/table if the file does not exist
 local function lines_from(file)
+  assert(type(file) == "string")
   if not file_exists(file) then return {} end
   local lines = {}
   for line in io.lines(file) do
@@ -27,8 +28,15 @@ local function lines_from(file)
 end
 
 local function words_to_anagrams(wordfile) 
+  assert(type(wordfile) == "string")
+  assert(cutils.isfile(wordfile), "File not found " .. wordfile)
   local words = lines_from(wordfile)
+  local max_len_word = 0 
+  for k, v in ipairs(words) do 
+    if ( #v > max_len_word ) then max_len_word = #v end
+  end
   print("Read " .. #words  .. " words")
+  print("Max length of word = ", max_len_word);
   --==================================
   local hdr = [[
   extern void free(void *ptr);
@@ -100,7 +108,7 @@ local function words_to_anagrams(wordfile)
         num_anagrams = num_anagrams + 1
       end
       local x = table.concat(v, " ")
-      print(k, x)
+      -- print(k, x)
       if ( num_anagrams > max_num_anagrams ) then 
         max_num_anagrams = num_anagrams 
       end
@@ -113,3 +121,4 @@ local function words_to_anagrams(wordfile)
   print("All done")
   return W
 end
+return words_to_anagrams

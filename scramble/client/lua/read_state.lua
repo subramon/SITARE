@@ -3,7 +3,7 @@ local cutils    = require 'libcutils'
 local JSON      = require 'RSUTILS/lua/JSON'
 local stringify = require 'RSUTILS/lua/stringify'
 local tbl_to_C_2d = require 'RSUTILS/lua/tbl_to_C_2d'
-local x         = require 'scramble/client/lua/game_state';  ffi.cdef(x)
+local x         = require 'game_state';  ffi.cdef(x)
 
 function read_state(
   json_response,

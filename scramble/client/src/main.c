@@ -20,6 +20,7 @@
 #include "game_state.h"
 #include "consts.h"
 #include "bridge_read_state.h"
+#include "bridge_anagram.h"
 #include "shuffle.h"
 #include "mk_lua_state.h"
 
@@ -96,6 +97,7 @@ main(
   int status = 0;
   lua_State *L = NULL;
   CURL *ch = NULL; // curl handle
+  char **anagrams = NULL; 
 #define URL_LEN 1024-1
   char url[URL_LEN+1];  memset(url, 0, URL_LEN+1);
   game_state_t S; memset(&S, 0, sizeof(game_state_t));
@@ -106,6 +108,10 @@ main(
   struct drand48_data rand_buf; 
   memset(&rand_buf, 0, sizeof(struct drand48_data));
 
+  anagrams = malloc(MAX_NUM_ANAGRAMS * sizeof(char *));
+  memset(anagrams, 0,  MAX_NUM_ANAGRAMS * sizeof(char *));
+  // values will be assigned by Lua function 
+
   srand48_r((long int)time(NULL), &rand_buf); 
   if ( argc != 4 ) { go_BYE(-1); }
   int user = atoi(argv[1]);
@@ -113,11 +119,16 @@ main(
   int port = atoi(argv[3]);
 
   L = mk_lua_state(); if ( L == NULL ) { go_BYE(-1); }
-  status = luaL_dostring(L, "require 'scramble/client/lua/read_state'");
+  status = luaL_dostring(L, "require 'read_state'");
   int chk = lua_gettop(L); if ( chk != 0 ) { go_BYE(-1); }
 
-  status = luaL_dostring(L, "can_str_to_anagrams = require "
-      "'scramble/anagrams/lua/words_to_anagrams'");
+  status = luaL_dostring(L, "require 'anagram'");
+  chk = lua_gettop(L); if ( chk != 0 ) { go_BYE(-1); }
+
+  status = luaL_dostring(L, "fn = require 'words_to_anagrams'");
+  chk = lua_gettop(L); if ( chk != 0 ) { go_BYE(-1); }
+
+  status = luaL_dostring(L, "can_str_to_anagram = fn('../../word_list')"); 
   chk = lua_gettop(L); if ( chk != 0 ) { go_BYE(-1); }
 
   // for curl 
@@ -126,11 +137,14 @@ main(
   buf = malloc(bufsz); memset(buf, 0, bufsz); 
 
   for ( int try = 0; ; try++ ) { 
+    bool found_word = false;
+    char word_to_make[MAX_LEN_WORD];
+    memset(word_to_make, 0, MAX_LEN_WORD);
     long http_code;
     /* for testing 
-    char json_file[32];sprintf(json_file, "../test/%d.json", i); 
-    server_response = file_as_str(json_file); 
-    */
+       char json_file[32];sprintf(json_file, "../test/%d.json", i); 
+       server_response = file_as_str(json_file); 
+       */
     // Get state from server in server_response
     sprintf(url, "http://%s:%d/GetState", server, port);
     memset(curl_userdata.base, 0, curl_userdata.size);
@@ -141,7 +155,7 @@ main(
     status = bridge_read_state(L, curl_userdata.base, &S); 
     cBYE(status); 
     uint64_t t_start = get_time_usec(); 
-// #define pragma omp parallel for 
+    // #define pragma omp parallel for 
     for ( uint32_t i = 0; i < S.nlttr; i++ ) {
       char can_str[MAX_LEN_CANONICAL_STR];
       memset(can_str, 0, MAX_LEN_CANONICAL_STR);
@@ -168,7 +182,27 @@ main(
           printf("%s %s\n", buf, can_str);
           if ( buflen < 6 ) { 
             // can be only a single word
-
+            int n_anagrams; 
+            status = bridge_anagram(L, can_str, anagrams, &n_anagrams);
+            if ( n_anagrams > 0 ) { 
+              bool new_word = true;
+              for ( int a = 0; a < n_anagrams; a++ ) { 
+                char *candidate = anagrams[a];
+                // Check if this exists in history
+                for ( uint32_t l = 0; l < S.nprev; l++ ) { 
+                  if ( strcmp(candidate, S.prev_words[l]) == 0 ) { 
+                    new_word = false; break;
+                  }
+                }
+                if ( new_word == true ) { break; }
+              }
+              if ( new_word == false ) {
+                found_word = false; 
+              }
+              else {
+                found_word = true; break;
+              }
+            }
           }
           else {
             // break up letters into 2 word candidates
@@ -177,16 +211,23 @@ main(
             go_BYE(-1); // TODO 
           }
         }
+        if ( found_word ) { break; }
         memset(buf, 0, bufsz); buflen = 0; 
       }
+      if ( found_word ) { break; }
+    }
+    if ( found_word ) { // make word 
+      printf("Making word %s \n", word_to_make); 
+      go_BYE(-1); // TODO 
+    }
+    else { // Add letter 
+      sprintf(url, "http://%s:%d/AddLetter", server, port);
+      memset(curl_userdata.base, 0, curl_userdata.size);
+      curl_userdata.offset = 0; 
+      status = execute(ch, url, &http_code); cBYE(status);
+      if ( http_code != 200 ) { go_BYE(-1); }
     }
 
-    // Add letter 
-    sprintf(url, "http://%s:%d/AddLetter", server, port);
-    memset(curl_userdata.base, 0, curl_userdata.size);
-    curl_userdata.offset = 0; 
-    status = execute(ch, url, &http_code); cBYE(status);
-    if ( http_code != 200 ) { go_BYE(-1); }
     // cleanup
     free_state(&S); 
     memset(curl_userdata.base, 0, curl_userdata.size);
@@ -204,18 +245,19 @@ BYE:
     curl_easy_cleanup(ch);  ch = NULL;
   }
   /*
-  if ( g_curl_hdrs != NULL ) {
-    curl_slist_free_all(g_curl_hdrs); g_curl_hdrs = NULL;
-  }
-  if ( g_ss_ch != NULL ) {
-    curl_easy_cleanup(g_ss_ch);  g_ss_ch = NULL;
-  }
-  if ( g_ss_curl_hdrs != NULL ) {
-    curl_slist_free_all(g_ss_curl_hdrs); g_ss_curl_hdrs = NULL;
-  }
-  */
+     if ( g_curl_hdrs != NULL ) {
+     curl_slist_free_all(g_curl_hdrs); g_curl_hdrs = NULL;
+     }
+     if ( g_ss_ch != NULL ) {
+     curl_easy_cleanup(g_ss_ch);  g_ss_ch = NULL;
+     }
+     if ( g_ss_curl_hdrs != NULL ) {
+     curl_slist_free_all(g_ss_curl_hdrs); g_ss_curl_hdrs = NULL;
+     }
+     */
   curl_global_cleanup();
   free_if_non_null(curl_userdata.base);
   // STOP: For curl 
+  free_if_non_null(anagrams);
   return status;
 }
