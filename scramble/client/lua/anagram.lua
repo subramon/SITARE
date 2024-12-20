@@ -3,9 +3,9 @@ local function anagram(can_str)
   assert(type(can_str) == "string")
   local W = can_str_to_anagram[can_str]
   if ( W == nil ) then
-    return 0, {}
+    return {}
   else
-    return #W, W
+    return W
   end
 end
 return  anagram
