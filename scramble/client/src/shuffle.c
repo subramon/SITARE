@@ -17,7 +17,6 @@ swap(
   *a = *b;
   *b = temp;
 }
-
 void 
 swap_I1(
     int8_t *a, 
@@ -25,6 +24,16 @@ swap_I1(
     )
 {
   int8_t temp = *a;
+  *a = *b;
+  *b = temp;
+}
+void 
+swap_I2(
+    int16_t *a, 
+    int16_t *b
+    )
+{
+  int16_t temp = *a;
   *a = *b;
   *b = temp;
 }
@@ -36,11 +45,21 @@ printArray_I1(
     )
 {
   for (int i = 0; i < n; i++) {
-    printf("%c ", arr[i]);
+    printf("%d ", arr[i]);
   }
   printf("\n");
 }
-
+void 
+printArray_I2(
+    int16_t arr[], 
+    int n
+    )
+{
+  for ( int i = 0; i < n; i++) {
+    printf("%d ", arr[i]);
+  }
+  printf("\n");
+}
 void 
 printArray(
     int arr[], 
@@ -99,6 +118,29 @@ randomize_I1(
     int j = (int)(result % (i+1));
     // Swap arr[i] with the element at random index
     swap_I1(&arr[i], &arr[j]);
+  }
+}
+void 
+randomize_I2(
+    struct drand48_data *ptr_rand_buf,
+    int16_t arr[], 
+    int n 
+    )
+{
+  // Use a different seed value so that we don't get same
+  // result each time we run this program
+  // srand((unsigned int)time(NULL)); 
+
+  // Start from the last element and swap one by one. We don't
+  // need to run for the first element that's why i > 0
+  for (int i = n-1; i > 0; i--) {
+    // Pick a random index from 0 to i
+    // int j = rand() % (i+1);
+    long int result;
+    lrand48_r(ptr_rand_buf, &result); 
+    int j = (int)(result % (i+1));
+    // Swap arr[i] with the element at random index
+    swap_I2(&arr[i], &arr[j]);
   }
 }
 

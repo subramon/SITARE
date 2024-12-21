@@ -72,7 +72,7 @@ local function check_Wplus(Wplus)
     end
     -- check that word is not in play (argue why this is not needed)
     for i = 1, #game.W do 
-      print("Found " .. w1 .. " at location ", i)
+      -- print("Found " .. w1 .. " at location ", i)
       assert(game.W[i] ~= w1)
     end
     -- check no duplicates
@@ -210,6 +210,12 @@ function make_word(str)
   assert((user >= 1) and (user <= game.nU))
   local Pminus = J.Pminus
   local Wminus = J.Wminus
+  if ( Wminus  ) then 
+    for k, v in pairs(Wminus) do 
+      if ( type(v) ~= "string") then print(str) end 
+      assert(type(v) == "string"); 
+    end 
+  end
   local Wplus = J.Wplus
   assert(type(Wplus) == "table")
   local n_plus = 0

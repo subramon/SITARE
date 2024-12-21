@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdbool.h>
 #include <limits.h>
 #include "q_macros.h"
@@ -11,12 +12,14 @@ letter_counter(
     )
 {
   int status = 0;
+  memset(count, 0, NUM_ALPHABET * sizeof(uint8_t));
   for ( const char * cptr = in_str; *cptr != '\0'; cptr++ ) {
     int idx  = *cptr - 'a';
 #ifdef DEBUG
     if ( ( idx < 0 ) || ( idx >= NUM_ALPHABET ) ) { go_BYE(-1); } 
     uint8_t curr_count  = count[idx];
-    if ( curr_count >= UCHAR_MAX ) { go_BYE(-1); }
+    if ( curr_count >= UCHAR_MAX ) { 
+      go_BYE(-1); }
 #endif
     count[idx]++;
   }

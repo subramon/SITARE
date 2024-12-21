@@ -5,8 +5,8 @@
 
 //START_FOR_CDEF
 typedef struct _game_state_t {
-  char **prev_words;
-  uint32_t nprev; 
+  char **used_words;
+  uint32_t nused; 
   char **curr_words;
   uint32_t ncurr; 
   char **letters; 

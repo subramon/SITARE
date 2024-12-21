@@ -31,3 +31,19 @@ randomize(
     int arr[], 
     int n 
     );
+extern void 
+swap_I2(
+    int16_t *a, 
+    int16_t *b
+    );
+extern void 
+printArray_I2(
+    int16_t arr[], 
+    int n
+    );
+extern void 
+randomize_I2(
+    struct drand48_data *ptr_rand_buf,
+    int16_t arr[], 
+    int n 
+    );

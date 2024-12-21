@@ -52,7 +52,7 @@ select_strings(
     char **ptr_buf,
     uint32_t *ptr_bufsz, 
     uint32_t *ptr_buflen,
-    int8_t selected_idxs[MAX_NUM_SELECTIONS]
+    int16_t selected_idxs[MAX_NUM_SELECTIONS]
     )
 {
   int status = 0;
@@ -60,13 +60,21 @@ select_strings(
   if ( n_to_pick == 0 ) { return status; }
   if ( nstrings == 0 ) { return status; }
 
-  memset(selected_idxs, 0, sizeof(int8_t)*MAX_NUM_SELECTIONS);
+  memset(selected_idxs, 0, sizeof(int16_t)*MAX_NUM_SELECTIONS);
   for ( uint32_t i = 0; i < nstrings; i++ ) { 
-    selected_idxs[i] = (int8_t)i; 
+    selected_idxs[i] = (int16_t)i; 
   }
-  randomize_I1(ptr_rand_buf, selected_idxs, (int)nstrings); cBYE(status); 
+  randomize_I2(ptr_rand_buf, selected_idxs, (int)nstrings); cBYE(status); 
+#ifdef DEBUG
+  for ( uint32_t i = 0; i < nstrings; i++ ) { 
+    if ( ( selected_idxs[i] < 0 ) || 
+        ( selected_idxs[i] > (int16_t)nstrings ) ) {
+      go_BYE(-1);
+    }
+  }
+#endif
   for ( uint32_t i = 0; i < n_to_pick; i++ ) { 
-    int8_t idx = selected_idxs[i]; 
+    int16_t idx = selected_idxs[i]; 
     status = cat_to_buf(ptr_buf, ptr_bufsz, ptr_buflen, strings[idx], 0);
     cBYE(status);
   }
@@ -82,7 +90,7 @@ free_state(
 {
   int status = 0;
   if ( ptr_S == NULL ) { go_BYE(-1); }
-  free_2d_array(&(ptr_S->prev_words), ptr_S->nprev); 
+  free_2d_array(&(ptr_S->used_words), ptr_S->nused); 
   free_2d_array(&(ptr_S->curr_words), ptr_S->ncurr); 
   free_if_non_null(ptr_S->letters);
 BYE:
@@ -97,7 +105,7 @@ main(
   int status = 0;
   lua_State *L = NULL;
   CURL *ch = NULL; // curl handle
-  char **new_words = NULL;  uint32_t n_new_words; 
+  char **new_words = NULL;  uint32_t n_new_words = 0; 
 #define MAX_URL_LEN 2048-1
   char url[MAX_URL_LEN+1];  memset(url, 0, MAX_URL_LEN+1);
   game_state_t S; memset(&S, 0, sizeof(game_state_t));
@@ -111,6 +119,7 @@ main(
   char *enc_http_req = NULL; 
 
   srand48_r((long int)time(NULL), &rand_buf); 
+  srand48_r(123456789, &rand_buf); 
   if ( argc != 4 ) { go_BYE(-1); }
   int user = atoi(argv[1]);
   const char * const server = argv[2]; 
@@ -134,8 +143,10 @@ main(
 
   buf = malloc(bufsz); memset(buf, 0, bufsz); 
 
+  int counter = 0;
   for ( int try = 0; ; try++ ) { 
     long http_code;
+    n_new_words = 0;
     /* for testing 
        char json_file[32];sprintf(json_file, "../test/%d.json", i); 
        server_response = file_as_str(json_file); 
@@ -152,46 +163,63 @@ main(
     uint64_t t_start = get_time_usec(); 
     // #define pragma omp parallel for 
     uint32_t nPminus = 0, nWminus = 0;
-    int8_t lttr_selected_idxs[MAX_NUM_SELECTIONS];
-    memset(lttr_selected_idxs, 0, sizeof(int8_t)*MAX_NUM_SELECTIONS);
-    int8_t word_selected_idxs[MAX_NUM_SELECTIONS];
-    memset(word_selected_idxs, 0, sizeof(int8_t)*MAX_NUM_SELECTIONS);
+    int16_t lttr_selected_idxs[MAX_NUM_SELECTIONS];
+    memset(lttr_selected_idxs, 0, sizeof(int16_t)*MAX_NUM_SELECTIONS);
+    int16_t word_selected_idxs[MAX_NUM_SELECTIONS];
+    memset(word_selected_idxs, 0, sizeof(int16_t)*MAX_NUM_SELECTIONS);
     for ( uint32_t i = 0; i < S.nlttr; i++ ) {
       nPminus = i;
       uint32_t outer_iters = calc_num_iters(i, S.nlttr);
       for ( uint32_t ii = 0; ii < outer_iters; ii++ ) {
+        memset(buf, 0, bufsz); buflen = 0; 
         // Select i letters
-        status = select_strings(&rand_buf, i, S.letters, S.nlttr, 
+        status = select_strings(&rand_buf, nPminus, S.letters, S.nlttr, 
             &buf, &bufsz, &buflen, lttr_selected_idxs);
         cBYE(status); 
-        for ( uint32_t j = 0; j < S.ncurr; j++ ) { 
+        if ( nPminus == 3 ) { 
+          printf("hello world\n");
+        }
+        if ( strlen(buf) != nPminus ) { go_BYE(-1); }
+        // Note the <= below 
+        for ( uint32_t j = 0; j <= S.ncurr; j++ ) {
           uint32_t inner_iters = calc_num_iters(j, S.ncurr);
-          nWminus = i;
+          nWminus = j;
           for ( uint32_t jj = 0; jj < inner_iters; jj++ ) {
-            if ( ( j == 0 ) && ( i <= 2 ) ) { continue; } 
             // Select j words
-            status = select_strings(&rand_buf, j, S.curr_words, S.ncurr, 
+            uint32_t before_buflen = buflen;
+            status = select_strings(&rand_buf, nWminus, S.curr_words, S.ncurr, 
                 &buf, &bufsz, &buflen, word_selected_idxs);
             cBYE(status); 
+            status = make_new_words(L, buf, &S, &new_words, &n_new_words); 
+            cBYE(status); 
+            counter++; 
+            if (( new_words == NULL ) && ( n_new_words > 0 )) { go_BYE(-1); }
+            if (( new_words != NULL ) && ( n_new_words == 0 )) { go_BYE(-1); }
+            if ( n_new_words > 0 ) { 
+              printf("found %d candidates [", n_new_words);
+              printf("[ ");
+              for ( uint32_t kk = 0; kk < n_new_words; kk++ ) { 
+                printf(" %s ", new_words[kk]);
+              }
+              printf("]\n");
+              memset(buf, 0, bufsz); buflen = 0; 
+              break; 
+            }
+            // undo the selection you just made 
+            for ( uint32_t bb = before_buflen; bb < buflen; bb++ ) {
+              buf[bb] = '\0';
+            }
+            buflen = before_buflen;
+
           }
+          if ( n_new_words > 0 ) { break; }
         }
-        status = make_new_words(L, buf, &S, &new_words, &n_new_words); 
-        cBYE(status); 
-        if ( n_new_words > 0 ) { 
-          // printf("found %d candidates [", n_new_words);
-          for ( uint32_t kk = 0; kk < n_new_words; kk++ ) { 
-            printf(" %s ", new_words[kk]);
-          }
-          printf("]\n");
-          memset(buf, 0, bufsz); buflen = 0;
-          break; 
-        }
-        memset(buf, 0, bufsz); buflen = 0; 
+        if ( n_new_words > 0 ) { break; }
       }
       if ( n_new_words > 0 ) { break; }
     }
     if ( n_new_words > 0 ) { // make word 
-      // printf("Making word %s \n", new_words[0]); 
+      printf("Making word %s \n", new_words[0]); 
       // make http request to add word 
       // -------------------------
       status = http_make_word(&S, user, 

@@ -22,8 +22,7 @@ function read_state(
   assert(clock> 0)
   cS[0].clock = clock
   --==================================================
-  local all_Wplus = {}
-  local all_Wminus = {}
+  local used_words = {}
   local H = assert(J.history)
   assert(type(H) == "table")
   for i = 1, #H do 
@@ -31,29 +30,19 @@ function read_state(
     assert(type(Wplus) == "table")
     assert(#Wplus >= 1)
     for _, w in ipairs(Wplus) do
-      all_Wplus[#all_Wplus+1] = w
+      used_words[#used_words+1] = w
     end 
-    local Wplus = H[i].Wplus
-    if ( Wminus ) then 
-      assert(type(Wminus) == "table")
-      assert(#Wminus >= 1)
-      for _, w in ipairs(Wminus) do
-        all_Wminus[#all_Wminus+1] = w
-      end 
-    end
   end 
-  -- subtract all_Wminus from all_Wplus to create curr_words
-  -- all_Wminus becomes prev_words
-  if ( #all_Wminus > 0 ) then
-    cS[0].prev_words, cS[0].nprev = tbl_to_C_2d(all_Wminus)
+  if ( #used_words > 0 ) then 
+    cS[0].used_words, cS[0].nused = tbl_to_C_2d(used_words)
   end
-  local curr_words = subtract_from(all_Wminus, all_Wplus)
+  --==================================================
+  local curr_words = assert(J.words)
+  assert(type(curr_words) == "table")
   if ( #curr_words > 0 ) then 
-    print("current words = ", table.concat(curr_words, " "))
     cS[0].curr_words, cS[0].ncurr = tbl_to_C_2d(curr_words)
-  else
-    print("No current words")
   end
+  --==================================================
   -- add letters from ppol
   local P = assert(J.pool)
   assert(type(P) == "table")

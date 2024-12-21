@@ -19,9 +19,9 @@ int
 http_make_word(
     game_state_t *ptr_S,
     int user,
-    int8_t *lidx_selection, // index in S.pool of letter chosen 
+    int16_t *lidx_selection, // index in S.pool of letter chosen 
     uint32_t nPminus,
-    int8_t *widx_selection,// index in W.pool of letter chosen 
+    int16_t *widx_selection,// index in W.pool of letter chosen 
     uint32_t nWminus,
     char **Wplus,
     uint32_t nWplus,
@@ -52,8 +52,17 @@ http_make_word(
     }
     status = cat_to_buf(&buf, &sz_buf, &n_buf, "]", 1); 
   }
-  if ( nWminus > 0 ) { 
-    go_BYE(-1); // TODO 
+  if ( nWminus > 0 ) { // put stolen words into request
+    sprintf(lbuf, " , \"Wminus\" : [ ");
+    status = cat_to_buf(&buf, &sz_buf, &n_buf, lbuf, 0); cBYE(status);
+    for ( uint32_t i = 0; i < nWminus; i++ ) { 
+      if ( i > 0 ) {
+        status = cat_to_buf(&buf, &sz_buf, &n_buf, ", ", 2); cBYE(status);
+      }
+      sprintf(lbuf, "\"%s\"", ptr_S->curr_words[widx_selection[i]]);
+      status = cat_to_buf(&buf, &sz_buf, &n_buf, lbuf, 0); cBYE(status);
+    }
+    status = cat_to_buf(&buf, &sz_buf, &n_buf, "]", 1); 
   }
   // put new words into request
   if ( nWplus == 0 ) { go_BYE(-1); }

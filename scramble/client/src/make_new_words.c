@@ -64,15 +64,16 @@ make_new_words(
   bool is_new_word = false; int aidx = -1; // pos where found 
   for ( uint32_t a = 0; a < n_anagrams; a++ ) {
     const char *l_anagram = anagrams[a];
-    bool exists_in_prev;
-    status = is_str_in_set(l_anagram, ptr_S->prev_words, ptr_S->nprev, 
-        &exists_in_prev);
+    bool exists_in_used;
+    status = is_str_in_set(l_anagram, ptr_S->used_words, ptr_S->nused, 
+        &exists_in_used);
     cBYE(status);
+    // TODO I don't think exists_in_curr is needed
     bool exists_in_curr;
     status = is_str_in_set(l_anagram, ptr_S->curr_words, ptr_S->ncurr, 
         &exists_in_curr);
     cBYE(status);
-    if ( !exists_in_prev && !exists_in_curr ) {
+    if ( !exists_in_used && !exists_in_curr ) {
       is_new_word = true;
       aidx = a; 
       break;
