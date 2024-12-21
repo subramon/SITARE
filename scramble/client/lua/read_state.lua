@@ -3,6 +3,7 @@ local cutils    = require 'libcutils'
 local JSON      = require 'RSUTILS/lua/JSON'
 local stringify = require 'RSUTILS/lua/stringify'
 local tbl_to_C_2d = require 'RSUTILS/lua/tbl_to_C_2d'
+local subtract_from = require 'subtract_from' -- scramble/server/lua
 local x         = require 'game_state';  ffi.cdef(x)
 
 function read_state(
@@ -45,6 +46,13 @@ function read_state(
   -- all_Wminus becomes prev_words
   if ( #all_Wminus > 0 ) then
     cS[0].prev_words, cS[0].nprev = tbl_to_C_2d(all_Wminus)
+  end
+  local curr_words = subtract_from(all_Wminus, all_Wplus)
+  if ( #curr_words > 0 ) then 
+    print("current words = ", table.concat(curr_words, " "))
+    cS[0].curr_words, cS[0].ncurr = tbl_to_C_2d(curr_words)
+  else
+    print("No current words")
   end
   -- add letters from ppol
   local P = assert(J.pool)

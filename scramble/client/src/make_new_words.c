@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "q_macros.h"
-#include "consts.h"
 #include "game_state.h"
 #include "bridge_anagram.h"
 #include "canonicalize.h"
@@ -57,7 +56,7 @@ make_new_words(
   //
   // convert string to canonical representation 
   status = canonicalize_1(buf, can_str); cBYE(status);
-  printf("%s %s\n", buf, can_str);
+  // printf("%s %s\n", buf, can_str);
   status = bridge_anagram(L, can_str, &anagrams, &n_anagrams);
   if ( n_anagrams == 0 ) { goto BYE; }
   // Now, we have some candidates but we need to make sure that 

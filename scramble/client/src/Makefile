@@ -80,6 +80,7 @@ game_client : \
 	canonicalize.o \
 	letter_counter.o \
 	make_new_words.o \
+	http_make_word.o \
 	${MYLIBS} \
 	
 	gcc \
@@ -92,6 +93,7 @@ game_client : \
 	canonicalize.o \
 	letter_counter.o \
 	make_new_words.o \
+	http_make_word.o \
 	\
 	-o game_client  \
 	${MYLIBS} \

@@ -4,50 +4,7 @@ local JSON    = require 'RSUTILS/lua/JSON'
 local is_in   = require 'is_in'
 local mk_letter_weights  = require 'mk_letter_weights'
 local weighted_selection = require 'weighted_selection'
-
-local function cat_with_nulls(X, nX)
-  local str = ""
-  for i = 1, nX do 
-    if ( X[i] ) then str = str .. X[i] end
-  end
-  return str
-end
-
-local function subtract_from(Pminus, P) 
-  assert(type(Pminus) == "table")
-  assert(type(P) == "table")
-  local n1 = #Pminus
-  local n2 = #P
-  local nP = #P
-  local tmp = {}
-  for k, v in ipairs(P) do 
-    tmp[k] = v
-  end
-  for k, v in ipairs(Pminus) do 
-    local found = false
-    for i = 1, nP do
-      if ( tmp[i] == v ) then
-        found = true
-        local Pstr = cat_with_nulls(tmp, nP)
-        -- print("Deleting from pool:  " .. v .. " in " .. Pstr)
-        tmp[i] = nil
-      end
-    end
-    if ( not found ) then 
-      local Pstr = cat_with_nulls(tmp, nP)
-      print("Did not find " .. v .. " in " .. Pstr)
-    end 
-    assert(found) 
-  end
-  local ret = {}
-  for k, v in pairs(tmp) do 
-    if ( tmp[k] ) then 
-      ret[#ret+1] = v
-    end
-  end
-  assert(#ret == (n2 - n1))
-  return ret
-end 
+local subtract_from = require 'subtract_from'
 --============================================================
 game = {} -- TODO Should this be a global?
 game.H = {} --- history (of which words were made, how and by whom)
@@ -115,6 +72,7 @@ local function check_Wplus(Wplus)
     end
     -- check that word is not in play (argue why this is not needed)
     for i = 1, #game.W do 
+      print("Found " .. w1 .. " at location ", i)
       assert(game.W[i] ~= w1)
     end
     -- check no duplicates

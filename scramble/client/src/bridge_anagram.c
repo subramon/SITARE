@@ -2,7 +2,6 @@
 #include <stdbool.h>
 #include <lualib.h>
 #include "q_macros.h"
-#include "consts.h"
 #include "game_state.h"
 #include "bridge_anagram.h"
 #include "get_array_of_strings.h"
