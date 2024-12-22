@@ -24,65 +24,6 @@
 #include "make_new_words.h"
 #include "http_make_word.h"
 
-
-static uint32_t
-calc_num_iters(
-    uint32_t i,
-    uint32_t n
-)
-{
-
-  if ( i == 0 ) { 
-    return 1; 
-  }
-  else if ( i == 1 ) { 
-    return n;
-  }
-  else if ( i == 2 ) { 
-    return (n * (n-1) / 2);
-  }
-  return 8; // TODO
-}
-static int
-select_strings(
-    struct drand48_data *ptr_rand_buf,
-    uint32_t n_to_pick,
-    char **strings, 
-    uint32_t nstrings, 
-    char **ptr_buf,
-    uint32_t *ptr_bufsz, 
-    uint32_t *ptr_buflen,
-    int16_t selected_idxs[MAX_NUM_SELECTIONS]
-    )
-{
-  int status = 0;
-
-  if ( n_to_pick == 0 ) { return status; }
-  if ( nstrings == 0 ) { return status; }
-
-  memset(selected_idxs, 0, sizeof(int16_t)*MAX_NUM_SELECTIONS);
-  for ( uint32_t i = 0; i < nstrings; i++ ) { 
-    selected_idxs[i] = (int16_t)i; 
-  }
-  randomize_I2(ptr_rand_buf, selected_idxs, (int)nstrings); cBYE(status); 
-#ifdef DEBUG
-  for ( uint32_t i = 0; i < nstrings; i++ ) { 
-    if ( ( selected_idxs[i] < 0 ) || 
-        ( selected_idxs[i] > (int16_t)nstrings ) ) {
-      go_BYE(-1);
-    }
-  }
-#endif
-  for ( uint32_t i = 0; i < n_to_pick; i++ ) { 
-    int16_t idx = selected_idxs[i]; 
-    status = cat_to_buf(ptr_buf, ptr_bufsz, ptr_buflen, strings[idx], 0);
-    cBYE(status);
-  }
-BYE:
-  return status;
-}
-
-
 static int
 free_state(
     game_state_t *ptr_S
@@ -110,11 +51,8 @@ main(
   char url[MAX_URL_LEN+1];  memset(url, 0, MAX_URL_LEN+1);
   game_state_t S; memset(&S, 0, sizeof(game_state_t));
   char *server_response = NULL;
-  char *buf = NULL; uint32_t buflen = 0; uint32_t bufsz = 64; 
   curl_userdata_t curl_userdata; 
   memset(&curl_userdata, 0, sizeof(curl_userdata_t));
-  struct drand48_data rand_buf; 
-  memset(&rand_buf, 0, sizeof(struct drand48_data));
   char *http_req = NULL; 
   char *enc_http_req = NULL; 
 
@@ -143,7 +81,6 @@ main(
 
   buf = malloc(bufsz); memset(buf, 0, bufsz); 
 
-  int counter = 0;
   for ( int try = 0; ; try++ ) { 
     long http_code;
     n_new_words = 0;
@@ -192,7 +129,6 @@ main(
             cBYE(status); 
             status = make_new_words(L, buf, &S, &new_words, &n_new_words); 
             cBYE(status); 
-            counter++; 
             if (( new_words == NULL ) && ( n_new_words > 0 )) { go_BYE(-1); }
             if (( new_words != NULL ) && ( n_new_words == 0 )) { go_BYE(-1); }
             if ( n_new_words > 0 ) { 
