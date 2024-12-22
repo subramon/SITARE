@@ -82,7 +82,7 @@ game_client : \
 	make_new_words.o \
 	http_make_word.o \
 	select_strings.o \
-	genearator.o \
+	generator.o \
 	${MYLIBS} \
 	
 	gcc \
@@ -97,7 +97,7 @@ game_client : \
 	make_new_words.o \
 	http_make_word.o \
 	select_strings.o \
-	genearator.o \
+	generator.o \
 	\
 	-o game_client  \
 	${MYLIBS} \

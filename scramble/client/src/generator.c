@@ -18,7 +18,9 @@ calc_num_iters(
     uint32_t n
 )
 {
-
+  if ( i >= MAX_NUM_SELECTIONS ) { 
+    return 0;
+  }
   if ( i == 0 ) { 
     return 1; 
   }
@@ -36,6 +38,10 @@ generator(
     const game_state_t * const ptr_S,
     lua_State *L, 
     uint64_t timeout, 
+    int16_t which_lttrs_selected[MAX_NUM_SELECTIONS],
+    uint16_t *ptr_nPminus, // number of letters selected
+    int16_t which_words_selected[MAX_NUM_SELECTIONS],
+    uint16_t *ptr_nWminus, // number of words selected
     char ***ptr_new_words,
     uint32_t *ptr_n_new_words
     )
@@ -47,35 +53,37 @@ generator(
   char *buf = NULL; uint32_t buflen = 0; uint32_t bufsz = 64; 
 
   *ptr_new_words = NULL; *ptr_n_new_words = 0;
+  buf = malloc(bufsz); memset(buf, 0, bufsz); 
+  // TODO Put this back srand48_r((long int)time(NULL), &rand_buf); 
+  srand48_r(123456789, &rand_buf); 
+
   uint64_t t_start = get_time_usec(); 
-  uint32_t nPminus = 0, nWminus = 0;
-  int16_t lttr_selected_idxs[MAX_NUM_SELECTIONS];
-  memset(lttr_selected_idxs, 0, sizeof(int16_t)*MAX_NUM_SELECTIONS);
-  int16_t word_selected_idxs[MAX_NUM_SELECTIONS];
-  memset(word_selected_idxs, 0, sizeof(int16_t)*MAX_NUM_SELECTIONS);
-  // #define pragma omp parallel for 
+  uint16_t nPminus = 0, nWminus = 0;
+  *ptr_nPminus = *ptr_nWminus = 0;
+
+// #define pragma omp parallel for 
   for ( uint32_t i = 0; i < ptr_S->nlttr; i++ ) {
-    nPminus = i;
+    // i : deciding on how many letters we will pick from pool 
+    nPminus = (uint16_t)i;
     uint32_t outer_iters = calc_num_iters(i, ptr_S->nlttr);
+    // outer_iters : how many random selections of i letters to make 
     for ( uint32_t ii = 0; ii < outer_iters; ii++ ) {
       memset(buf, 0, bufsz); buflen = 0; 
       // Select i letters
-      status = select_strings(&rand_buf, nPminus, ptr_S->letters, ptr_S->nlttr, 
-          &buf, &bufsz, &buflen, lttr_selected_idxs);
+      status = select_strings(&rand_buf, nPminus, 
+          ptr_S->letters, ptr_S->nlttr, 
+          &buf, &bufsz, &buflen, which_lttrs_selected);
       cBYE(status); 
-      if ( nPminus == 3 ) { 
-        printf("hello world\n");
-      }
       if ( strlen(buf) != nPminus ) { go_BYE(-1); }
       // Note the <= below 
       for ( uint32_t j = 0; j <= ptr_S->ncurr; j++ ) {
         uint32_t inner_iters = calc_num_iters(j, ptr_S->ncurr);
-        nWminus = j;
+        nWminus = (uint16_t)j;
         for ( uint32_t jj = 0; jj < inner_iters; jj++ ) {
           // Select j words
           uint32_t before_buflen = buflen;
           status = select_strings(&rand_buf, nWminus, ptr_S->curr_words, ptr_S->ncurr, 
-              &buf, &bufsz, &buflen, word_selected_idxs);
+              &buf, &bufsz, &buflen, which_words_selected);
           cBYE(status); 
           status = make_new_words(L, buf, ptr_S, &new_words, &n_new_words); 
           cBYE(status); 
@@ -93,6 +101,8 @@ generator(
             }
             printf("]\n");
             memset(buf, 0, bufsz); buflen = 0; 
+            *ptr_nPminus = nPminus;
+            *ptr_nWminus = nWminus;
             break; 
           }
           // undo the selection you just made 

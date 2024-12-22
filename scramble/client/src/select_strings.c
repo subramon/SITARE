@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
 #include "q_macros.h"
@@ -26,22 +27,33 @@ select_strings(
 
   if ( n_to_pick == 0 ) { return status; }
   if ( nstrings == 0 ) { return status; }
+  if ( nstrings > 327267 ) { go_BYE(-1); }
 
-  memset(selected_idxs, 0, sizeof(int16_t)*MAX_NUM_SELECTIONS);
-  for ( uint32_t i = 0; i < nstrings; i++ ) { 
-    selected_idxs[i] = (int16_t)i; 
+  // cannot pick more than you have 
+  if ( n_to_pick > nstrings ) { go_BYE(-1); }
+  uint32_t n_picked = 0; 
+  for ( uint32_t i = 0; i < n_to_pick; i++ ) {
+    // pick random number until you get one that hasn't been picked before 
+    bool unique;
+    int pick = -1;
+    do { 
+      // let j = random index selected
+      long int result; 
+      lrand48_r(ptr_rand_buf, &result); 
+      pick = (int)(result % (long int)nstrings); 
+      unique = true; 
+      for ( uint32_t j = 0; j < n_picked; j++ ) { 
+        if ( pick == selected_idxs[j] ) {
+          unique = false; 
+          break;
+        }
+      }
+    } while ( !unique ); 
+    selected_idxs[n_picked++] = (int16_t)pick;
   }
-  randomize_I2(ptr_rand_buf, selected_idxs, (int)nstrings); cBYE(status); 
-#ifdef DEBUG
-  for ( uint32_t i = 0; i < nstrings; i++ ) { 
-    if ( ( selected_idxs[i] < 0 ) || 
-        ( selected_idxs[i] > (int16_t)nstrings ) ) {
-      go_BYE(-1);
-    }
-  }
-#endif
   for ( uint32_t i = 0; i < n_to_pick; i++ ) { 
     int16_t idx = selected_idxs[i]; 
+    if ( ( idx < 0 ) || ( idx >= nstrings ) ) { go_BYE(-1); }
     status = cat_to_buf(ptr_buf, ptr_bufsz, ptr_buflen, strings[idx], 0);
     cBYE(status);
   }
